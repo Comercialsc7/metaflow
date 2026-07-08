@@ -1,0 +1,36 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint-and-smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Syntax check
+        run: python -m py_compile api_server.py distribuir_metas.py distribuir_metas_por_fornecedor.py
+
+      - name: Health smoke test
+        run: |
+          python - << 'PY'
+          from api_server import app
+          client = app.test_client()
+          response = client.get('/api/health')
+          assert response.status_code == 200
+          payload = response.get_json()
+          assert payload.get('status') == 'ok'
+          print('health_ok')
+          PY
