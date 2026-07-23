@@ -9,7 +9,7 @@ def distribuir_metas(
     if meta_total <= 0 or not entidades:
         for e in entidades:
             e["meta_final"] = 0.0
-            e["indice_pressao"] = 0.0
+            e["indice_peso"] = 0.0
         return entidades
 
     # Normalizar pesos
@@ -24,7 +24,7 @@ def distribuir_metas(
             validas.append(e)
         else:
             e["meta_final"] = 0.0
-            e["indice_pressao"] = 0.0
+            e["indice_peso"] = 0.0
 
     if not validas:
         return entidades
@@ -57,7 +57,7 @@ def distribuir_metas(
 
         i += 1
 
-    # Índice de pressão
+    # Índice de peso
     for e in entidades:
         e["meta_final"] = max(0.0, e.get("meta_final", 0.0))
         e.pop("score", None)
@@ -68,10 +68,10 @@ def distribuir_metas(
                 max(e["historico"], 0) * peso_historico
             )
 
-            e["indice_pressao"] = round(
+            e["indice_peso"] = round(
                 e["meta_final"] / base, 2
             ) if base > 0 else 0.0
         else:
-            e["indice_pressao"] = 0.0
+            e["indice_peso"] = 0.0
 
     return entidades

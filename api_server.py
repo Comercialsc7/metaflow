@@ -1,20 +1,18 @@
-import os
-from flask import Flask, request, jsonify
+from flask import Flask, request
 from flask_cors import CORS
-from distribuir_metas_por_fornecedor import distribuir_metas_por_fornecedor
-
-
-def _bool_env(name, default=False):
-    raw = os.getenv(name)
-    if raw is None:
-        return default
-    return raw.strip().lower() in {"1", "true", "yes", "on"}
+from src.controllers.METAS import rota_distribuir_metas
+from src.helpers.ambiente import bool_ambiente, carregar_variavel
+from src.helpers.log import registrar_log
+from src.helpers.respostas import resposta_json
+from src.rotas.rotas_metas import rotas_metas
 
 
 def create_app():
+    # Cria a aplicação Flask e configura o CORS para o frontend.
     app = Flask(__name__)
+    app.register_blueprint(rotas_metas)
 
-    allowed_origins = os.getenv("CORS_ORIGINS", "*")
+    allowed_origins = carregar_variavel('CORS_ORIGINS', '*')
     if allowed_origins.strip() == "*":
         CORS(app)
     else:
@@ -24,53 +22,49 @@ def create_app():
 
     @app.route('/api/distribuir-metas', methods=['POST'])
     def distribuir_metas_endpoint():
-        """
-        Distribui metas usando o motor de distribuição.
-        """
+        """Endpoint legado compatível com o frontend atual."""
         try:
             data = request.get_json(silent=True) or {}
 
-            estrutura = data.get('estrutura')
-            metas = data.get('metas')
+            registrar_log('Requisição recebida no endpoint legado de distribuição', 'info')
+            resultados = rota_distribuir_metas(data)
 
-            peso_media = float(data.get('peso_media', 0.5))
-            peso_historico = float(data.get('peso_historico', 0.5))
-            bloco = int(data.get('bloco', 500))
-
-            if not estrutura or not metas:
-                return jsonify({
-                    "sucesso": False,
-                    "erro": "estrutura e metas sao obrigatorios"
-                }), 400
-
-            resultados = distribuir_metas_por_fornecedor(
-                estrutura,
-                metas,
-                peso_media,
-                peso_historico,
-                bloco
+            return resposta_json(
+                True,
+                'Distribuição concluída com sucesso',
+                {'distribuicao': resultados},
+                status_code=200,
+                distribuicao=resultados,
             )
 
-            return jsonify({
-                "sucesso": True,
-                "distribuicao": resultados
-            }), 200
-
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            return jsonify({
-                "sucesso": False,
-                "erro": str(e)
-            }), 500
-
+        except ValueError as error:
+            registrar_log(f'Erro de validação no endpoint legado: {error}', 'warning')
+            return resposta_json(
+                False,
+                str(error),
+                erro=str(error),
+                status_code=400,
+            )
+        except Exception as error:
+            registrar_log(f'Erro ao processar requisição: {error}', 'error')
+            return resposta_json(
+                False,
+                'Erro ao processar requisição',
+                erro=str(error),
+                status_code=500,
+            )
 
     @app.route('/api/health', methods=['GET'])
     def health():
-        return jsonify({
-            "status": "ok",
-            "servico": "Motor de Distribuicao de Metas"
-        }), 200
+        return resposta_json(
+            True,
+            'API disponível',
+            {
+                'status': 'ok',
+                'servico': 'Motor de Distribuicao de Metas',
+            },
+            status_code=200,
+        )
 
     return app
 
@@ -79,8 +73,8 @@ app = create_app()
 
 
 if __name__ == '__main__':
-    host = os.getenv("HOST", "0.0.0.0")
-    port = int(os.getenv("PORT", "5000"))
-    debug = _bool_env("FLASK_DEBUG", default=False)
-    print(f"Iniciando servidor de distribuicao de metas em {host}:{port}...")
+    host = carregar_variavel('HOST', '0.0.0.0')
+    port = int(carregar_variavel('PORT', '5000'))
+    debug = bool_ambiente('FLASK_DEBUG', False)
+    registrar_log(f'Iniciando servidor de distribuicao de metas em {host}:{port}...', 'info')
     app.run(debug=debug, host=host, port=port)

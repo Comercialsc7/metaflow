@@ -1,0 +1,8 @@
+2026-07-23 09:28:29,504 - INFO - Iniciando servidor de distribuicao de metas em 0.0.0.0:5000...
+2026-07-23 09:28:29,553 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.4.92:5000
+2026-07-23 09:28:29,553 - INFO - [33mPress CTRL+C to quit[0m
+2026-07-23 09:29:27,907 - INFO - 127.0.0.1 - - [23/Jul/2026 09:29:27] "GET /api/health HTTP/1.1" 200 -
+2026-07-23 09:29:56,629 - INFO - 127.0.0.1 - - [23/Jul/2026 09:29:56] "GET /api/health HTTP/1.1" 200 -

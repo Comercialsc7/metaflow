@@ -1,13 +1,47 @@
 # API Motor Metas
 
-API Flask para distribuicao de metas por fornecedor, equipe e vendedor.
+API Flask para distribuição de metas por fornecedor, equipe e vendedor.
+
+## Visão geral
+
+Este serviço recebe uma estrutura de dados com a distribuição atual das metas e aplica a lógica de distribuição para retornar os resultados consolidados. A API foi organizada para manter compatibilidade com o frontend atual e também oferecer uma rota mais clara para uso interno.
+
+## Estrutura do projeto
+
+- `api_server.py`: ponto de entrada da aplicação Flask.
+- `src/controllers/METAS.py`: controller responsável por validar e encaminhar o payload para o motor.
+- `src/rotas/rotas_metas.py`: blueprint com a rota web da API.
+- `src/helpers/`: módulos auxiliares para respostas, ambiente e logs.
+- `distribuir_metas.py` e `distribuir_metas_por_fornecedor.py`: motor principal da distribuição.
 
 ## Endpoints
 
+### 1. Saúde da API
+
 - `GET /api/health`
+
+Resposta esperada:
+
+```json
+{
+  "sucesso": true,
+  "mensagem": "API disponível",
+  "dados": {
+    "status": "ok",
+    "servico": "Motor de Distribuicao de Metas"
+  }
+}
+```
+
+### 2. Distribuição de metas (rote legado)
+
 - `POST /api/distribuir-metas`
 
-### Exemplo de payload
+### 3. Distribuição de metas (rota web)
+
+- `POST /web/metas/distribuir`
+
+## Payload esperado
 
 ```json
 {
@@ -26,45 +60,80 @@ API Flask para distribuicao de metas por fornecedor, equipe e vendedor.
 }
 ```
 
+## Exemplo de resposta
+
+```json
+{
+  "sucesso": true,
+  "mensagem": "Distribuição concluída com sucesso",
+  "dados": {
+    "distribuicao": {
+      "FORNECEDOR_1": [
+        {
+          "vendedor": "V1",
+          "equipe": "EQ1",
+          "media": 1000,
+          "historico": 1200,
+          "meta_final": 3500,
+          "indice_peso": 3.18
+        }
+      ]
+    }
+  },
+  "distribuicao": {
+    "FORNECEDOR_1": [
+      {
+        "vendedor": "V1",
+        "equipe": "EQ1",
+        "media": 1000,
+        "historico": 1200,
+        "meta_final": 3500,
+        "indice_peso": 3.18
+      }
+    ]
+  }
+}
+```
+
 ## Rodar localmente
 
 ```bash
 python -m venv .venv
-.venv\\Scripts\\activate
+.venv\Scripts\activate
 pip install -r requirements.txt
 python api_server.py
 ```
 
-A API sobe por padrao em `http://localhost:5000`.
+A API sobe por padrão em `http://localhost:5000`.
 
-## Variaveis de ambiente
+## Variáveis de ambiente
 
-Use o arquivo `.env.example` como referencia.
+Use o arquivo `.env` como referência.
 
-- `HOST` (default: `0.0.0.0`)
-- `PORT` (default: `5000`)
-- `FLASK_DEBUG` (default: `false`)
-- `CORS_ORIGINS` (default: `*`)
+- `HOST` (padrão: `0.0.0.0`)
+- `PORT` (padrão: `5000`)
+- `FLASK_DEBUG` (padrão: `false`)
+- `CORS_ORIGINS` (padrão: `*`)
 
-Exemplo:
+Exemplo no Windows PowerShell:
 
-```bash
-set HOST=0.0.0.0
-set PORT=5000
-set FLASK_DEBUG=true
-set CORS_ORIGINS=http://localhost:5173
+```powershell
+$env:HOST="0.0.0.0"
+$env:PORT="5000"
+$env:FLASK_DEBUG="true"
+$env:CORS_ORIGINS="http://localhost:5173"
 python api_server.py
 ```
 
 ## Deploy
 
-Este projeto ja inclui `Procfile` para plataformas compativeis com `gunicorn`.
+Este projeto já inclui `Procfile` para plataformas compatíveis com Gunicorn.
 
-Tambem inclui:
+Também inclui:
 
 - `render.yaml` para deploy no Render
-- `.github/workflows/ci.yml` para validacao automatica no GitHub Actions
-- `runtime.txt` para fixar versao de Python
+- `.github/workflows/ci.yml` para validação automática no GitHub Actions
+- `runtime.txt` para fixar a versão do Python
 
 Comando web:
 
@@ -72,24 +141,16 @@ Comando web:
 gunicorn api_server:app --bind 0.0.0.0:$PORT
 ```
 
-## Publicar no GitHub
+## Validação
+
+Os testes básicos da API podem ser executados com:
 
 ```bash
-git init
-git add .
-git commit -m "chore: bootstrap standalone API motor metas"
-git branch -M main
-git remote add origin https://github.com/SEU_USUARIO/API-motor-metas.git
-git push -u origin main
+python -m unittest discover -s tests -v
 ```
 
-## Deploy no Render
+## Observações
 
-1. Crie um novo Web Service a partir do repositorio.
-2. O Render detectara o `render.yaml` automaticamente.
-3. Configure `CORS_ORIGINS` com a URL do frontend publicado.
-4. Apos deploy, copie a URL da API e configure no frontend:
-
-```bash
-VITE_API_BASE_URL=https://seu-app.onrender.com
-```
+- A API mantém compatibilidade com o frontend antigo por meio da rota `/api/distribuir-metas`.
+- A nova rota `/web/metas/distribuir` foi criada para oferecer uma estrutura mais organizada e clara.
+- As respostas são retornadas em um formato padronizado com `sucesso`, `mensagem`, `dados` e, quando necessário, `distribuicao`.
