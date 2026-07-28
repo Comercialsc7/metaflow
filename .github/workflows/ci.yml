@@ -7,6 +7,9 @@ on:
 jobs:
   lint-and-smoke:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: API-motor-metas
 
     steps:
       - name: Checkout

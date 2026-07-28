@@ -1,17 +1,18 @@
 # MetaFlow
 
-Aplicação para gestão e distribuição de metas de vendas com frontend React/Vite e motor Python (API Flask).
+Aplicação para gestão e distribuição de metas de vendas.
 
 ## Estrutura
 
 | Pasta | Descrição |
 |-------|-----------|
-| `/` (raiz) | API Flask — motor de distribuição de metas |
-| `frontend/` | Interface React/Vite (MetaFlow) |
+| `API-motor-metas/` | API Flask — motor de distribuição de metas |
+| `metas-frontand/` | Interface React/Vite |
 
-## API (raiz)
+## API Motor
 
 ```bash
+cd API-motor-metas
 python -m venv .venv
 # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
@@ -20,15 +21,15 @@ python api_server.py
 
 Health check: `GET /api/health`
 
-## Frontend
+## Metas Front
 
 ```bash
-cd frontend
+cd metas-frontand
 npm install
 npm run dev
 ```
 
-Configure a URL da API no ambiente do frontend (arquivo `.env` local — não versionado).
+Configure a URL da API no `.env` local (não versionado).
 
 ## Status
 
