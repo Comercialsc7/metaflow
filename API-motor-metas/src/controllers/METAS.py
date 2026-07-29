@@ -8,7 +8,7 @@ def extrair_payload_distribuicao(dados):
     metas = dados.get('metas')
     peso_media = float(dados.get('peso_media', 0.5))
     peso_historico = float(dados.get('peso_historico', 0.5))
-    bloco = int(dados.get('bloco', 500))
+    bloco = int(dados.get('bloco', 100))
 
     if not estrutura or not metas:
         raise ValueError('estrutura e metas sao obrigatorios')

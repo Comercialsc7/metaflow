@@ -49,6 +49,7 @@ export default function SupplierRegistrationPage() {
     setRecords: setContextRecords,
     fornecedorVendedorStats,
     setDistribuicao,
+    metasMinimas = [],
   } = useOutletContext()
   const navigate = useNavigate()
 
@@ -125,10 +126,12 @@ export default function SupplierRegistrationPage() {
           supplier: fornecedor,
           team: entidade.equipe,
           seller: entidade.vendedor,
+          sellerCode: entidade.sellerCode || '',
           history: entidade.historico || 0,
           average: entidade.media || 0,
           suggested: entidade.meta_final || 0,
           adjusted: entidade.meta_final || 0,
+          meta_minima: entidade.meta_minima_aplicada ?? entidade.meta_minima ?? 0,
           indice_pressao: entidade.indice_pressao || 0,
         })
       })
@@ -140,7 +143,13 @@ export default function SupplierRegistrationPage() {
   async function confirmDistribute() {
     setIsDistributing(true)
     try {
-      const result = await distribuirMetas(filtered, vendedores, {}, fornecedorVendedorStats)
+      const result = await distribuirMetas(
+        filtered,
+        vendedores,
+        {},
+        fornecedorVendedorStats,
+        metasMinimas,
+      )
 
       if (!result.sucesso) {
         alert(`Erro ao distribuir: ${result.erro}`)

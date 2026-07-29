@@ -442,6 +442,10 @@ function AppLayout() {
   // Formato: { "FORNECEDOR#EQUIPE#VENDEDOR_CODE": { media, historico } }
   const [fornecedorVendedorStats, setFornecedorVendedorStats] = useState({})
 
+  // Metas mínimas (válidas para todos os meses)
+  // Formato: [{ EQUIPE, COD, AREA, FORNECEDOR, VALOR, VALOR_NUM }]
+  const [metasMinimas, setMetasMinimas] = useState(() => parseStoredJson('metasMinimas', []))
+
   const userPermissions = useMemo(
     () => normalizePermissions(currentUser?.permissoes, currentUser?.nivel),
     [currentUser],
@@ -480,6 +484,10 @@ function AppLayout() {
   }, [usuarios])
 
   useEffect(() => {
+    localStorage.setItem('metasMinimas', JSON.stringify(metasMinimas))
+  }, [metasMinimas])
+
+  useEffect(() => {
     if (!currentUser) return
 
     const latest = usuarios.find((u) => u.id === currentUser.id)
@@ -516,6 +524,8 @@ function AppLayout() {
     fornecedorEquipeStats, setFornecedorEquipeStats,
     // Mapa de dados por vendedor individual
     fornecedorVendedorStats, setFornecedorVendedorStats,
+    // Metas mínimas (todos os meses)
+    metasMinimas, setMetasMinimas,
   }
 
   return (

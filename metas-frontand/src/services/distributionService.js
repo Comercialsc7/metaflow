@@ -4,40 +4,59 @@
  */
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
+const BLOCO_PADRAO = 100
+
+/**
+ * Monta mapa de metas mínimas: FORNECEDOR#EQUIPE#COD -> valor
+ */
+function montarMapaMetasMinimas(metasMinimas = []) {
+  const mapa = {}
+  ;(metasMinimas || []).forEach((row) => {
+    const fornecedor = String(row.FORNECEDOR || '').trim()
+    const equipe = String(row.EQUIPE || '').trim()
+    const cod = String(row.COD || '').trim()
+    if (!fornecedor || !equipe || !cod) return
+
+    const key = `${fornecedor}#${equipe}#${cod}`
+    const valor = Number(row.VALOR_NUM ?? row.VALOR ?? 0)
+    if (!Number.isFinite(valor) || valor <= 0) return
+
+    mapa[key] = (mapa[key] || 0) + valor
+  })
+  return mapa
+}
 
 /**
  * Monta a estrutura interna esperada pelo motor de distribuição
  * Usa stats individuais por vendedor (FORNECEDOR#EQUIPE#VENDEDOR_CODE)
- * @param {Array} records - Records de metas (fornecedores com meta total)
- * @param {Array} vendedores - Lista de vendedores
- * @param {Object} fornecedorVendedorStats - Mapa { "FORNECEDOR#EQUIPE#VEND_CODE": { media, historico } }
- * @returns {Object} Estrutura no formato { FORNECEDOR: [entidades] }
  */
-function montarEstrutura(records, vendedores, fornecedorVendedorStats = {}) {
+function montarEstrutura(records, vendedores, fornecedorVendedorStats = {}, metasMinimas = []) {
   const estrutura = {}
+  const mapaMinimas = montarMapaMetasMinimas(metasMinimas)
 
   records.forEach((record) => {
     const fornecedor = record.supplierName || record.supplierCode || 'UNKNOWN'
     if (!estrutura[fornecedor]) estrutura[fornecedor] = []
 
     if (!vendedores || vendedores.length === 0) {
-      // Sem vendedores: usa totais do fornecedor como entidade única
       estrutura[fornecedor].push({
         media: record.media || 0,
         historico: record.historico || 0,
+        meta_minima: 0,
         equipe: 'Default',
         vendedor: '',
       })
       return
     }
 
-    // 1 entidade por vendedor com stats individuais do CSV
     vendedores.forEach((vendedor) => {
       const statsKey = `${fornecedor}#${vendedor.equipe}#${vendedor.codigo}`
       const stats = fornecedorVendedorStats[statsKey] || { media: 0, historico: 0 }
+      const metaMinima = mapaMinimas[statsKey] || 0
       estrutura[fornecedor].push({
         media: stats.media || 0,
         historico: stats.historico || 0,
+        meta_minima: metaMinima,
         equipe: vendedor.equipe || 'Default',
         sellerCode: vendedor.codigo || '',
         seller: vendedor.nome || vendedor.codigo || '',
@@ -52,15 +71,13 @@ function montarEstrutura(records, vendedores, fornecedorVendedorStats = {}) {
 
 /**
  * Monta o dicionário de metas por fornecedor
- * @param {Array} records - Records de metas
- * @returns {Object} Dicionário { FORNECEDOR: metaTotal }
  */
 function montarMetas(records) {
   const metas = {}
 
   records.forEach((record) => {
     const fornecedor = record.supplierName || record.supplierCode || 'UNKNOWN'
-    
+
     if (fornecedor && !metas[fornecedor]) {
       metas[fornecedor] = Number(record.initialTarget || 0)
     }
@@ -71,26 +88,23 @@ function montarMetas(records) {
 
 /**
  * Chama a API de distribuição de metas (1ª distribuição: Admin → Vendedores)
- * @param {Array} records - Records com metas por fornecedor
- * @param {Array} vendedores - Lista de vendedores individuais
- * @param {Object} opcoes - { peso_media, peso_historico, bloco }
- * @param {Object} fornecedorVendedorStats - Mapa { "FORNECEDOR#EQUIPE#VEND_CODE": { media, historico } }
- * @returns {Promise<Object>} Resultado da distribuição
+ * metasMinimas entram somente nesta chamada.
  */
 export async function distribuirMetas(
   records,
   vendedores,
   opcoes = {},
-  fornecedorVendedorStats = {}
+  fornecedorVendedorStats = {},
+  metasMinimas = []
 ) {
   const {
     peso_media = 0.5,
     peso_historico = 0.5,
-    bloco = 500,
+    bloco = BLOCO_PADRAO,
   } = opcoes
 
   try {
-    const estrutura = montarEstrutura(records, vendedores, fornecedorVendedorStats)
+    const estrutura = montarEstrutura(records, vendedores, fornecedorVendedorStats, metasMinimas)
     const metas = montarMetas(records)
 
     if (Object.keys(metas).length === 0 || Object.keys(estrutura).length === 0) {
@@ -137,13 +151,8 @@ export async function distribuirMetas(
 }
 
 /**
- * Redistribui as metas ajustadas da equipe entre os vendedores
- * Chamado pelo Gerente após ajustar as metas de equipe
- * @param {Array} rowsAjustadas - Rows com metas ajustadas por (fornecedor, equipe)
- * @param {Array} vendedores - Lista de vendedores
- * @param {Object} fornecedorEquipeStats - Mapa { "FORNECEDOR#EQUIPE": { media, historico } }
- * @param {Object} opcoes - { peso_media, peso_historico, bloco }
- * @returns {Promise<Object>} Resultado com distribuição por vendedor
+ * Redistribui as metas ajustadas da equipe entre os vendedores.
+ * Não reaplica metas mínimas — o piso já veio na 1ª distribuição.
  */
 export async function redistribuirMetasParaVendedores(
   rowsAjustadas,
@@ -154,11 +163,10 @@ export async function redistribuirMetasParaVendedores(
   const {
     peso_media = 0.5,
     peso_historico = 0.5,
-    bloco = 500,
+    bloco = BLOCO_PADRAO,
   } = opcoes
 
   try {
-    // Chave por FORNECEDOR#EQUIPE para manter metas separadas por equipe
     const estrutura = {}
     const metas = {}
 
@@ -175,15 +183,21 @@ export async function redistribuirMetasParaVendedores(
       )
 
       if (vendedoresEquipe.length === 0) {
-        estrutura[chave].push({ media: 0, historico: 0, equipe, vendedor: 'SEM_VENDEDOR' })
+        estrutura[chave].push({
+          media: 0,
+          historico: 0,
+          meta_minima: 0,
+          equipe,
+          vendedor: 'SEM_VENDEDOR',
+        })
       } else {
         vendedoresEquipe.forEach((vendedor) => {
-          // Usa stats individuais do vendedor (FORNECEDOR#EQUIPE#CODIGO)
           const statsKey = `${fornecedor}#${equipe}#${vendedor.codigo}`
           const stats = fornecedorVendedorStats[statsKey] || { media: 0, historico: 0 }
           estrutura[chave].push({
             media: stats.media || 0,
             historico: stats.historico || 0,
+            meta_minima: 0,
             equipe,
             sellerCode: vendedor.codigo || '',
             seller: vendedor.nome || vendedor.codigo || '',
@@ -205,7 +219,6 @@ export async function redistribuirMetasParaVendedores(
     const data = await response.json()
     if (!data.sucesso) throw new Error(data.erro || 'Erro desconhecido na distribuição')
 
-    // Converte chaves "FORNECEDOR#EQUIPE" de volta para { fornecedor, equipe }
     const distribuicaoConvertida = {}
     Object.entries(data.distribuicao || {}).forEach(([chave, entidades]) => {
       const sepIdx = chave.indexOf('#')
@@ -224,7 +237,6 @@ export async function redistribuirMetasParaVendedores(
 
 /**
  * Valida se a API está disponível
- * @returns {Promise<boolean>}
  */
 export async function verificarAPIDisponivel() {
   try {

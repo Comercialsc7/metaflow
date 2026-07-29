@@ -74,7 +74,7 @@ def simular_distribuicao(fornecedores_raw, meta_total=1000000.0, peso_media=0.5,
         entidades=entidades,
         peso_media=peso_media,
         peso_historico=peso_historico,
-        bloco=500
+        bloco=100
     )
     
     # Preparar resultado com nomes
