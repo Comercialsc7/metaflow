@@ -234,16 +234,3 @@ export async function redistribuirMetasParaVendedores(
     return { sucesso: false, erro: error.message || 'Erro ao redistribuir metas' }
   }
 }
-
-/**
- * Valida se a API está disponível
- */
-export async function verificarAPIDisponivel() {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/health`)
-    return response.ok
-  } catch (error) {
-    console.error('API não disponível:', error)
-    return false
-  }
-}
