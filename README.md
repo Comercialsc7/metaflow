@@ -64,6 +64,3 @@ git push origin main
 
 > Não use `.git` separado em `metas-frontand/`. A pasta na raiz do monorepo (`project_Metas/metas-frontand`) é apenas um junction para facilitar o acesso local.
 
-## Status
-
-Projeto concluído.
