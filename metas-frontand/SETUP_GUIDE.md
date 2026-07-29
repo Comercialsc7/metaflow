@@ -9,7 +9,7 @@
 
 ### 1. Instalar dependências do Python (API)
 ```bash
-cd ../API-motor-metas/API-motor-metas
+cd ../API-motor-metas
 pip install -r requirements.txt
 ```
 
@@ -34,7 +34,7 @@ chmod +x start-dev.sh
 
 ### Opção 3: Manual (Terminal 1 - API)
 ```bash
-cd ../API-motor-metas/API-motor-metas
+cd ../API-motor-metas
 python api_server.py
 # Ou em Linux/Mac:
 python3 api_server.py
@@ -55,7 +55,7 @@ A URL da API pode ser alterada em `.env` via `VITE_API_BASE_URL`.
 ## Troubleshooting
 
 ### Erro: "módulo 'distribuir_metas_por_fornecedor' não encontrado"
-- Certifique-se de estar no diretório `../API-motor-metas/API-motor-metas`
+- Certifique-se de estar no diretório `../API-motor-metas`
 - Verifique se `distribuir_metas_por_fornecedor.py` e `distribuir_metas.py` existem nessa pasta
 
 ### Erro: "Port 5000 already in use"

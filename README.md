@@ -29,7 +29,40 @@ npm install
 npm run dev
 ```
 
-Configure a URL da API no `.env` local (não versionado).
+Configure a URL da API no `.env` local (não versionado):
+
+```bash
+cp metas-frontand/.env.example metas-frontand/.env
+```
+
+## Git (repositório único)
+
+Este diretório (`API-motor-metas/`) é o **único repositório git** do MetaFlow.
+
+| Pasta | Papel |
+|-------|-------|
+| `API-motor-metas/` (este repo) | Commit, push e histórico |
+| `metas-frontand/` | Frontend versionado aqui dentro |
+| `../metas-frontand/` (junction) | Atalho local para a mesma pasta do frontend |
+
+**Fluxo de trabalho:**
+
+```bash
+# Clone
+git clone https://github.com/Comercialsc7/metaflow.git API-motor-metas
+cd API-motor-metas
+
+# Frontend (pode abrir metas-frontand/ ou ../metas-frontand/ via junction)
+cd metas-frontand && npm install && npm run dev
+
+# Commit e push (sempre na raiz do repo)
+cd ..
+git add .
+git commit -m "sua mensagem"
+git push origin main
+```
+
+> Não use `.git` separado em `metas-frontand/`. A pasta na raiz do monorepo (`project_Metas/metas-frontand`) é apenas um junction para facilitar o acesso local.
 
 ## Status
 

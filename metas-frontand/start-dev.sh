@@ -6,7 +6,7 @@ echo "Iniciando Motor de Distribuicao de Metas"
 echo "======================================"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-API_DIR="$SCRIPT_DIR/../API-motor-metas/API-motor-metas"
+API_DIR="$SCRIPT_DIR/../API-motor-metas"
 
 # Verificar se o Python esta instalado
 if ! command -v python3 &> /dev/null; then

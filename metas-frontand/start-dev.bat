@@ -5,7 +5,7 @@ echo ======================================
 echo Iniciando Motor de Distribuicao de Metas
 echo ======================================
 
-set API_DIR=..\API-motor-metas\API-motor-metas
+set API_DIR=..\API-motor-metas
 
 REM Verificar se o Python esta instalado
 python --version >nul 2>&1
