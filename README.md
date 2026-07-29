@@ -6,13 +6,13 @@ Aplicação para gestão e distribuição de metas de vendas.
 
 | Pasta | Descrição |
 |-------|-----------|
-| `API-motor-metas/` | API Flask — motor de distribuição de metas |
-| `metas-frontand/` | Interface React/Vite |
+| `API-motor-metas/API-motor-metas/` | API Flask — motor de distribuição de metas |
+| `metas-frontand/` | Interface React/Vite (na raiz do monorepo) |
 
 ## API Motor
 
 ```bash
-cd API-motor-metas
+cd API-motor-metas/API-motor-metas
 python -m venv .venv
 # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
