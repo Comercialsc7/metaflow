@@ -10,5 +10,7 @@ services:
     envVars:
       - key: FLASK_DEBUG
         value: "false"
+      # Front local (Vite) apontando para API no Render. Inclua a URL do front
+      # de staging/prod aqui quando existir (vírgula, sem barra no final).
       - key: CORS_ORIGINS
-        value: "*"
+        value: "http://localhost:5173,http://127.0.0.1:5173"

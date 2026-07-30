@@ -4,20 +4,48 @@ from src.controllers.METAS import rota_distribuir_metas
 from src.helpers.ambiente import bool_ambiente, carregar_variavel
 from src.helpers.log import registrar_log
 from src.helpers.respostas import resposta_json
-from src.rotas.rotas_metas import rotas_metas
+
+# Origins padrão para teste local (Vite). Nunca usar "*" em ambiente compartilhado.
+CORS_ORIGINS_PADRAO = 'http://localhost:5173,http://127.0.0.1:5173'
+
+
+def _resolver_origins_cors():
+    """Lê CORS_ORIGINS e devolve lista explícita. Wildcard * é rejeitado."""
+    bruto = (carregar_variavel('CORS_ORIGINS', CORS_ORIGINS_PADRAO) or '').strip()
+    if not bruto or bruto == '*':
+        if bruto == '*':
+            registrar_log(
+                'CORS_ORIGINS=* não é permitido. Usando origins locais padrão.',
+                'warning',
+            )
+        return [o.strip() for o in CORS_ORIGINS_PADRAO.split(',') if o.strip()]
+
+    origins = [origin.strip() for origin in bruto.split(',') if origin.strip()]
+    if '*' in origins:
+        registrar_log(
+            'CORS_ORIGINS contém "*". Removendo wildcard; mantendo demais origins.',
+            'warning',
+        )
+        origins = [origin for origin in origins if origin != '*']
+
+    if not origins:
+        return [o.strip() for o in CORS_ORIGINS_PADRAO.split(',') if o.strip()]
+
+    return origins
 
 
 def create_app():
     # Cria a aplicação Flask e configura o CORS para o frontend.
     app = Flask(__name__)
-    app.register_blueprint(rotas_metas)
 
-    allowed_origins = carregar_variavel('CORS_ORIGINS', '*')
-    if allowed_origins.strip() == "*":
-        CORS(app)
-    else:
-        origins = [origin.strip() for origin in allowed_origins.split(",") if origin.strip()]
-        CORS(app, resources={r"/api/*": {"origins": origins}})
+    origins = _resolver_origins_cors()
+    registrar_log(f'CORS habilitado para: {", ".join(origins)}', 'info')
+    CORS(
+        app,
+        resources={
+            r"/api/*": {"origins": origins},
+        },
+    )
 
 
     @app.route('/api/distribuir-metas', methods=['POST'])

@@ -16,6 +16,7 @@ import {
   UserCog,
   UserRound,
   ClipboardList,
+  Target,
 } from 'lucide-react'
 
 import LoginPage from './pages/LoginPage'
@@ -24,6 +25,7 @@ import ManagerAdjustPage from './pages/ManagerAdjustPage'
 import SupervisorFinalPage from './pages/SupervisorFinalPage'
 import CadastrosPage from './pages/CadastrosPage'
 import SupplierRegistrationPage from './pages/SupplierRegistrationPage'
+import PositivacaoPage from './pages/positivacao/PositivacaoPage'
 
 // ── Meses em português ───────────────────────────────────────────────────────
 export const MONTHS = [
@@ -37,6 +39,7 @@ const NAV_ITEMS = [
   { label: 'Fornecedores', path: '/fornecedores', Icon: Package },
   { label: 'Gerentes', path: '/gerente', Icon: UserCog },
   { label: 'Equipes', path: '/supervisor', Icon: Users },
+  { label: 'Positivação', path: '/positivacao', Icon: Target },
   { label: 'Cadastros', path: '/cadastros', Icon: ClipboardList },
 ]
 
@@ -90,6 +93,11 @@ function normalizePermissions(rawPermissions, level) {
     ? rawPermissions.pages
     : defaultPermissions.pages
 
+  // ADMIN sempre enxerga páginas novas do NAV (ex.: positivação)
+  const pagesFinal = isAdmin
+    ? Array.from(new Set([...pages, ...ALL_APP_PAGES]))
+    : pages
+
   const allTeams = typeof rawPermissions.allTeams === 'boolean'
     ? rawPermissions.allTeams
     : defaultPermissions.allTeams
@@ -99,7 +107,7 @@ function normalizePermissions(rawPermissions, level) {
     : []
 
   return {
-    pages,
+    pages: pagesFinal,
     allTeams,
     teams,
   }
@@ -446,6 +454,9 @@ function AppLayout() {
   // Formato: [{ EQUIPE, COD, AREA, FORNECEDOR, VALOR, VALOR_NUM }]
   const [metasMinimas, setMetasMinimas] = useState(() => parseStoredJson('metasMinimas', []))
 
+  // Positivação (domínio separado das metas financeiras)
+  const [positivacaoRows, setPositivacaoRows] = useState([])
+
   const userPermissions = useMemo(
     () => normalizePermissions(currentUser?.permissoes, currentUser?.nivel),
     [currentUser],
@@ -526,6 +537,8 @@ function AppLayout() {
     fornecedorVendedorStats, setFornecedorVendedorStats,
     // Metas mínimas (todos os meses)
     metasMinimas, setMetasMinimas,
+    // Positivação (separado de financeiro)
+    positivacaoRows, setPositivacaoRows,
   }
 
   return (
@@ -622,6 +635,7 @@ export default function App() {
         <Route path="/fornecedores" element={canAccess('/fornecedores') ? <SupplierRegistrationPage /> : <Navigate to={fallbackPath} replace />} />
         <Route path="/gerente" element={canAccess('/gerente') ? <ManagerAdjustPage /> : <Navigate to={fallbackPath} replace />} />
         <Route path="/supervisor" element={canAccess('/supervisor') ? <SupervisorFinalPage /> : <Navigate to={fallbackPath} replace />} />
+        <Route path="/positivacao" element={canAccess('/positivacao') ? <PositivacaoPage /> : <Navigate to={fallbackPath} replace />} />
         <Route path="/cadastros" element={canAccess('/cadastros') ? <CadastrosPage /> : <Navigate to={fallbackPath} replace />} />
         <Route path="/configuracoes" element={<Navigate to="/cadastros" replace />} />
         <Route path="/" element={<Navigate to={fallbackPath} replace />} />
