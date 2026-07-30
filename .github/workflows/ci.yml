@@ -34,6 +34,7 @@ jobs:
           response = client.get('/api/health')
           assert response.status_code == 200
           payload = response.get_json()
-          assert payload.get('status') == 'ok'
+          assert payload.get('sucesso') is True
+          assert payload.get('dados', {}).get('status') == 'ok'
           print('health_ok')
           PY
