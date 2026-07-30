@@ -10,6 +10,27 @@ const fmtInt = (v) => {
   return Number(v).toLocaleString('pt-BR')
 }
 
+const fmtPct = (v) => {
+  if (v == null || !Number.isFinite(v)) return '—'
+  return `${v.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`
+}
+
+function calcCobertura(metaAtual, clientesAtivos) {
+  const clientes = Number(clientesAtivos)
+  const meta = Number(metaAtual)
+  if (!clientes || !Number.isFinite(clientes) || !Number.isFinite(meta)) return null
+  return (meta / clientes) * 100
+}
+
+function renderCoberturaCell(params) {
+  const v = params.value
+  if (v == null || !Number.isFinite(v)) {
+    return <span className="font-semibold text-slate-400">—</span>
+  }
+  const cls = v < 70 ? 'text-rose-600' : 'text-emerald-600'
+  return <span className={`font-semibold text-sm ${cls}`}>{fmtPct(v)}</span>
+}
+
 function parseIntSafe(raw) {
   if (raw === '' || raw == null) return null
   const n = parseInt(String(raw).replace(/\D/g, ''), 10)
@@ -157,6 +178,44 @@ export default function PositivacaoPage() {
     return list
   }, [rows, totais])
 
+  const groupedByTeam = useMemo(() => {
+    const map = new Map()
+    rows.forEach((row) => {
+      const key = row.team || 'Sem equipe'
+      const cur = map.get(key) || {
+        team: key,
+        clientesAtivos: 0,
+        media4m: 0,
+        metaAtual: 0,
+        sugestaoSoma: 0,
+      }
+      cur.clientesAtivos += row.clientesAtivos ?? 0
+      cur.media4m += row.media4m ?? 0
+      cur.metaAtual += row.metaAtual ?? 0
+      cur.sugestaoSoma += row.sugestao ?? row.metaAtual ?? 0
+      map.set(key, cur)
+    })
+    const list = [...map.values()]
+      .map((g) => ({
+        team: g.team,
+        clientesAtivos: g.clientesAtivos,
+        media4m: g.media4m,
+        metaAtual: g.metaAtual,
+        sugestao: g.sugestaoSoma,
+      }))
+      .sort((a, b) => String(a.team).localeCompare(String(b.team), 'pt-BR'))
+
+    list.push({
+      team: 'TOTAL',
+      clientesAtivos: totais.clientesAtivos,
+      media4m: totais.media4m,
+      metaAtual: totais.metaAtual,
+      sugestao: rows.reduce((s, r) => s + (r.sugestao ?? r.metaAtual ?? 0), 0),
+      isTotal: true,
+    })
+    return list
+  }, [rows, totais])
+
   function onCellValueChanged(e) {
     if (!podeEditar) return
     if (e.column.getColId() !== 'sugestao') return
@@ -228,9 +287,50 @@ export default function PositivacaoPage() {
         cellClass: (p) => (p.data?.isTotal ? 'ag-cell-total' : ''),
       },
       {
-        headerName: 'Efetiva (sugestão ou meta)',
+        headerName: 'Efetiva',
         field: 'sugestao',
+        minWidth: 140,
+        valueFormatter: (p) => fmtInt(p.value),
+        cellStyle: { backgroundColor: '#E5F0FF' },
+        cellClass: (p) => (p.data?.isTotal ? 'ag-cell-total' : ''),
+      },
+    ],
+    [],
+  )
+
+  const teamSummaryColumns = useMemo(
+    () => [
+      {
+        headerName: 'Equipe',
+        field: 'team',
         minWidth: 180,
+        cellClass: (p) => (p.data?.isTotal ? 'ag-cell-total' : ''),
+      },
+      {
+        headerName: 'Clientes ativos',
+        field: 'clientesAtivos',
+        minWidth: 140,
+        valueFormatter: (p) => fmtInt(p.value),
+        cellClass: (p) => (p.data?.isTotal ? 'ag-cell-total' : ''),
+      },
+      {
+        headerName: 'Média 4m',
+        field: 'media4m',
+        minWidth: 120,
+        valueFormatter: (p) => fmtInt(p.value),
+        cellClass: (p) => (p.data?.isTotal ? 'ag-cell-total' : ''),
+      },
+      {
+        headerName: 'Meta atual',
+        field: 'metaAtual',
+        minWidth: 120,
+        valueFormatter: (p) => fmtInt(p.value),
+        cellClass: (p) => (p.data?.isTotal ? 'ag-cell-total' : ''),
+      },
+      {
+        headerName: 'Efetiva',
+        field: 'sugestao',
+        minWidth: 140,
         valueFormatter: (p) => fmtInt(p.value),
         cellStyle: { backgroundColor: '#E5F0FF' },
         cellClass: (p) => (p.data?.isTotal ? 'ag-cell-total' : ''),
@@ -278,6 +378,12 @@ export default function PositivacaoPage() {
         minWidth: 120,
         cellStyle: { backgroundColor: '#f1f5f9' },
         valueFormatter: (p) => fmtInt(p.value),
+      },
+      {
+        headerName: '% Cobertura',
+        minWidth: 130,
+        valueGetter: (p) => calcCobertura(p.data?.metaAtual, p.data?.clientesAtivos),
+        cellRenderer: (params) => renderCoberturaCell(params),
       },
       {
         headerName: locked ? 'Sugestão 🔒' : 'Sugestão',
@@ -350,6 +456,17 @@ export default function PositivacaoPage() {
         <ExcelGrid
           rowData={groupedBySupplier}
           columnDefs={supplierSummaryColumns}
+          height={220}
+        />
+      </section>
+
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-100 px-4 py-3">
+          <h3 className="text-sm font-bold text-slate-800">Resumo por equipe</h3>
+        </div>
+        <ExcelGrid
+          rowData={groupedByTeam}
+          columnDefs={teamSummaryColumns}
           height={220}
         />
       </section>
